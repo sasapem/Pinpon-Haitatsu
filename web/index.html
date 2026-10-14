@@ -1,0 +1,332 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>ピンポン配達</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14213d;--panel:#1d2c52;--ink:#fff;--sub:#9fb3e0;--or:#ff8a2a;--wh:#f2f4f8;--go:#38e07b;--ng:#ff4d5e;--gold:#ffd23f}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -20%,#2c4a8a 0%,var(--bg) 60%,#0b1226 100%);color:var(--ink);font-family:"M PLUS Rounded 1c",system-ui,sans-serif;overflow:auto}
+#top{display:flex;align-items:center;gap:12px;padding:10px 20px}
+#logo{font-size:30px;font-weight:800;letter-spacing:2px}
+#logo b{color:var(--or)} #logo i{font-style:normal;color:var(--gold)}
+#setupBtn{margin-left:auto}
+button{font-family:inherit;font-size:16px;font-weight:800;padding:9px 14px;margin:3px;border-radius:12px;border:0;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+button:active{transform:translateY(2px);box-shadow:none}
+.sel{outline:4px solid var(--gold)}
+#setup{position:fixed;top:60px;right:16px;width:300px;background:var(--panel);border-radius:18px;padding:14px;z-index:20;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#setup h3{margin:6px 0;font-size:14px;color:var(--sub)}
+#setup button{width:100%;margin:4px 0}
+#info{font-size:11px;color:var(--sub);margin-top:6px;word-break:break-all}
+#main{display:flex;gap:26px;justify-content:center;align-items:flex-start;padding:6px 20px}
+#mapwrap{position:relative}
+#map{display:block;width:min(620px,calc(100vh - 90px));height:min(620px,calc(100vh - 90px));border-radius:26px;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+#side{width:360px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--panel);border-radius:20px;padding:10px 14px;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+#clock{display:flex;align-items:center;gap:14px}
+#ring{width:84px;height:84px}
+#time{font-size:44px;font-weight:800;line-height:1}
+#timeLabel{font-size:14px;color:var(--sub)}
+#cust{display:flex;gap:12px;align-items:center}
+#face{width:62px;height:62px;border-radius:50%;background:#2a3b6b;display:grid;place-items:center;font-size:38px;flex:none}
+#bubble{position:relative;background:#fff;color:#222;border-radius:16px;padding:10px 14px;font-size:20px;font-weight:800;min-height:46px;flex:1}
+#bubble:before{content:"";position:absolute;left:-10px;top:16px;border:8px solid transparent;border-right-color:#fff;border-left:0}
+#custTag{font-size:12px;color:var(--sub);margin-top:6px}
+#msg{font-size:17px;color:var(--sub);min-height:24px}
+.players{display:flex;gap:10px}
+.pl{flex:1;border-radius:16px;padding:10px;background:#16224a;border:3px solid transparent;transition:.2s}
+.pl.on{border-color:var(--gold);transform:scale(1.03)}
+.pl .ball{width:34px;height:34px;border-radius:50%;margin:0 auto 4px}
+.pl .n{font-size:14px;color:var(--sub)} .pl .v{font-size:30px;font-weight:800} .pl .t{font-size:12px;color:var(--sub);min-height:16px}
+#pow{height:16px;border-radius:8px;background:#0f1836;overflow:hidden}
+#powbar{height:100%;width:0;background:linear-gradient(90deg,var(--go),var(--gold),var(--ng));transition:width .08s}
+#powTxt{font-size:13px;color:var(--sub);display:flex;justify-content:space-between;margin-top:4px}
+#drop{width:100%;font-size:20px;background:var(--ng);color:#fff;padding:14px}
+kbd{background:#fff;color:#222;border-radius:6px;padding:1px 8px;font-size:14px;margin-left:6px}
+#big{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;font-size:84px;font-weight:800;text-align:center;line-height:1.1;
+ text-shadow:0 6px 0 rgba(0,0,0,.45),0 0 30px rgba(0,0,0,.4);opacity:0}
+#big.show{animation:pop .5s cubic-bezier(.2,1.6,.4,1) forwards}
+#big.go{color:var(--go)} #big.ok{color:var(--gold)} #big.ng{color:var(--ng)} #big.info{color:#fff;font-size:40px}
+@keyframes pop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+#flash{position:fixed;inset:0;pointer-events:none;background:var(--ng);opacity:0}
+#flash.on{animation:fl .8s}
+@keyframes fl{0%{opacity:.55}100%{opacity:0}}
+#fx{position:fixed;inset:0;pointer-events:none}
+</style></head><body>
+<div id="top">
+ <div id="logo"><b>●</b> ピンポン<i>配達</i></div>
+ <button onclick="start(1)" style="background:var(--go);color:#063">▶ 1人で</button>
+ <button onclick="start(2)" style="background:#4cc3ff;color:#033">▶ 2人で</button>
+ <button onclick="stopAll()" style="background:#3a4a78;color:#fff">■</button>
+ <span id="padSt" style="font-weight:800;margin-left:10px">🎹 確認中…</span>
+ <button id="setupBtn" onclick="toggleSetup()" style="background:#3a4a78;color:#fff">⚙ じゅんび</button>
+</div>
+<div id="setup">
+ <h3>1. toioをつなぐ(押すと選択)</h3>
+ <button id="c0" onclick="pick(0)" style="background:var(--or);color:#fff">① オレンジ玉</button>
+ <button id="c1" onclick="pick(1)" style="background:var(--wh);color:#222">② 白玉</button>
+ <button id="c2" onclick="pick(2)" style="background:#555;color:#fff">③ 人形(お客さん)</button>
+ <h3>2. パッドとマットを合わせる</h3>
+ <button onclick="calStart()" style="background:var(--gold);color:#222">📍 位置合わせ</button>
+ <div id="info"></div>
+</div>
+<div id="main">
+ <div id="mapwrap"><canvas id="map" width="620" height="620"></canvas><div id="big"></div></div>
+ <div id="side">
+  <div class="card" id="clock"><svg id="ring" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" stroke="#0f1836" stroke-width="14" fill="none"/><circle id="arc" cx="60" cy="60" r="50" stroke="var(--gold)" stroke-width="14" fill="none" stroke-linecap="round" transform="rotate(-90 60 60)" stroke-dasharray="314" stroke-dashoffset="0"/></svg>
+   <div><div id="timeLabel">じゅんび中</div><div id="time">--</div></div></div>
+  <div class="card"><div id="cust"><div id="face">🧑</div><div id="bubble">まだかな〜</div></div><div id="custTag">お客さん(AIが毎回 場所と向きを決める)</div></div>
+  <div class="card"><div class="players">
+   <div class="pl" id="pl0"><div class="ball" style="background:radial-gradient(circle at 35% 30%,#ffd0a0,var(--or) 55%,#b04a00)"></div><div class="n">オレンジ</div><div class="v" id="v0">0</div><div class="t" id="t0"></div></div>
+   <div class="pl" id="pl1"><div class="ball" style="background:radial-gradient(circle at 35% 30%,#fff,#e6e9f0 55%,#9aa3b5)"></div><div class="n">白</div><div class="v" id="v1">0</div><div class="t" id="t1"></div></div>
+  </div></div>
+  <div class="card"><div style="font-size:13px;color:var(--sub);margin-bottom:6px">叩いた強さ = スピード</div><div id="pow"><div id="powbar"></div></div><div id="powTxt"><span>そっと(安全)</span><span>ドカン(落ちるかも)</span></div></div>
+  <div id="msg">人形の<b style="color:var(--go)">正面</b>に玉をぴったり付けたら配達完了</div>
+  <button id="drop" onclick="dropped()">玉が落ちた！/ 再開 <kbd>スペース</kbd></button>
+ </div>
+</div>
+<div id="flash"></div><canvas id="fx"></canvas>
+<script src="toio.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+function L(...a){try{fetch('http://localhost:8895/',{method:'POST',mode:'no-cors',body:a.map(x=>typeof x==='string'?x:JSON.stringify(x)).join(' ')})}catch(e){}}
+const cubes=[null,null,null]; let cur=0;
+const NAME=['オレンジ','白'];
+const TURN_LIMIT=15;      // 1回の配達の制限時間(秒・カウントダウン)
+const TURNS1=5, TURNS2=3;  // 1人用は5回、2人用は1人3回ずつ
+const FRONT=28;           // 人形の中心から正面の接点までの距離(マット座標)
+const ARRIVE=16;          // 正面の接点からこれ以内で到着
+const HOLD=400;           // ぴったり付いたまま この時間(ms)で完了
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function big(t,cls,ms){const b=$('big');b.className='';void b.offsetWidth;b.innerHTML=t;b.className='show '+(cls||'info');clearTimeout(big.t);if(ms)big.t=setTimeout(()=>b.className='',ms)}
+function toggleSetup(){const e=$('setup');e.hidden=!e.hidden}
+function say(t){$('bubble').textContent=t}
+// 紙吹雪
+const FX=[];function confetti(){const W=innerWidth;for(let i=0;i<140;i++)FX.push({x:W*0.35+Math.random()*W*0.3,y:innerHeight*0.45,vx:(Math.random()-.5)*14,vy:-Math.random()*16-4,c:['#ffd23f','#ff8a2a','#38e07b','#4cc3ff','#fff'][i%5],r:Math.random()*6.28,l:90})}
+function fxStep(){const cv=$('fx');if(cv.width!==innerWidth){cv.width=innerWidth;cv.height=innerHeight}const g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);
+ for(let i=FX.length-1;i>=0;i--){const p=FX[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.5;p.r+=.2;if(--p.l<0){FX.splice(i,1);continue}g.save();g.translate(p.x,p.y);g.rotate(p.r);g.fillStyle=p.c;g.fillRect(-5,-3,10,6);g.restore()}}
+
+async function pick(i){
+  cur=i; for(let k=0;k<3;k++) $('c'+k).classList.toggle('sel',k===i);
+  if(cubes[i]) return;
+  try{const c=await Toio.connect(); cubes[i]=c; L('CONNECT',i); c.lamp(...[[255,120,0],[255,255,255],[0,255,0]][i],0); c.sound(i)}
+  catch(e){$('msg').textContent='つなげません: '+e.message}
+}
+function stopAll(){state='idle';cubes.forEach(c=>c&&c.stop());big('ストップ','info',1500)}
+
+// ---- 位置合わせ(3つの角) ----
+let CAL=null, calStep=-1, calPts=[];
+try{CAL=JSON.parse(localStorage.getItem('haitatsuCal')||'null'); if(CAL&&!CAL.v2){for(const k of ['x','y']){const t=CAL[k].a;CAL[k].a=CAL[k].b;CAL[k].b=t} CAL.v2=1; localStorage.setItem('haitatsuCal',JSON.stringify(CAL))}}catch(e){}
+const CAL_SAY=['左下','右下','左上'];
+function calStart(){ if(!cubes[cur]){const k=cubes.findIndex(c=>c);if(k<0){big('先にtoioをつないでね','ng',2000);return}cur=k} CAL=null; try{localStorage.removeItem('haitatsuCal')}catch(e){} $('setup').hidden=true; calStep=0;calPts=[];calSay();L('CALSTART',cur)}
+function calSay(){const nm=['オレンジ玉','白玉','人形'][cur];big(`<span style="font-size:30px">位置合わせ ${calStep+1}/3</span><br><span style="font-size:40px">${nm}のtoioを<br>マットの<b style="color:#ffd23f">${CAL_SAY[calStep]}</b>のマスに置いて<br>パッドの<b style="color:#ffd23f">${CAL_SAY[calStep]}</b>を叩く</span>`,'info')}
+function calHit(n){
+  const c=cubes[cur]; L('CALHIT',n,c&&c.pos);
+  if(!c||!c.pos||c.pos.x==null||c.pos.onMat===false){big('toioがマットの上で見えません<br><span style="font-size:28px">置き直してから、もう一度叩いて</span>','ng');return}
+  calPts.push({c:(n-36)&3,r:(n-36)>>2,x:c.pos.x,y:c.pos.y}); calStep++; c.sound(1);
+  if(calStep<3){calSay();return}
+  calStep=-1; const [A,B,C]=calPts;
+  const det=(B.c-A.c)*(C.r-A.r)-(C.c-A.c)*(B.r-A.r);
+  if(!det){big('うまくいきませんでした<br><span style="font-size:28px">左下・右下・左上は別々のパッドで。もう一度📍</span>','ng');return}
+  const solve=k=>{const d1=B[k]-A[k], d2=C[k]-A[k];
+    const a=(d1*(C.r-A.r)-d2*(B.r-A.r))/det, b=((B.c-A.c)*d2-(C.c-A.c)*d1)/det; return {a,b,o:A[k]-a*A.c-b*A.r}};
+  CAL={x:solve('x'),y:solve('y'),v2:1}; L('CAL',calPts,CAL);
+  try{localStorage.setItem('haitatsuCal',JSON.stringify(CAL))}catch(e){}
+  $('msg').textContent='位置合わせ完了！'; big('位置合わせOK','ok',1200);
+}
+function cellXY(col,row){
+  if(CAL) return {x:Math.round(CAL.x.o+CAL.x.a*col+CAL.x.b*row), y:Math.round(CAL.y.o+CAL.y.a*col+CAL.y.b*row)};
+  return {x:Math.round(98+(col+0.5)*76), y:Math.round(358-(row+0.5)*54)};
+}
+const DIRS={'上':[0,1],'下':[0,-1],'右':[1,0],'左':[-1,0]};
+function dirAngle(dc,dr){const a=cellXY(0,0),b=cellXY(dc,dr);return Math.round((Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI+360)%360)}
+function frontPoint(p){const a=p.angle*Math.PI/180;return {x:p.x+FRONT*Math.cos(a),y:p.y+FRONT*Math.sin(a)}}
+function nearestCell(p){let best=null,bd=1e9;for(let c=0;c<4;c++)for(let r=0;r<4;r++){const q=cellXY(c,r),d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd){bd=d;best={c,r}}}return best}
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+// ---- ゲーム ----
+let touchAt=0, state='idle', mode=1, runner=0, tEnd=0, tTurn=0, score=[0,0], times=[[],[]], turnNo=0, doll=null;
+async function start(m){
+  if(!cubes[0]||!cubes[2]||(m===2&&!cubes[1])){$('msg').textContent='オレンジ玉'+(m===2?'・白玉':'')+'・人形のtoioをつないでください';return}
+  mode=m; score=[0,0]; times=[[],[]]; turnNo=0; runner=0;
+  showScore(); $('setup').hidden=true; L('START',m); await nextTurn();
+}
+async function aiPlace(ball){
+  const bc=nearestCell(ball.pos||{x:0,y:0});
+  const other = mode===2 && cubes[1-runner]?.pos ? nearestCell(cubes[1-runner].pos) : null;
+  const prompt=`4x4のマス目(列0-3, 段0-3)。配達ゲームの届け先の人形の置き場所を決めて。
+玉を運ぶtoioはマス(${bc.c},${bc.r})にいる。${other?`もう1台がマス(${other.c},${other.r})にいるので、そこは避けて。`:''}
+玉から遠く、まっすぐ行きにくい(縦横どちらも離れた)マスを選べ。毎回少し変化をつけて。
+人形が向く方向(上/下/右/左)も決めて。玉は人形の正面に付けないと配達完了にならない。玉がいる側と反対を向かせ、回り込ませると良い。正面の先のマスが盤の外にならないこと(段は上が3、右が列3)。
+人形のひとこと(15文字以内、配達を待つ住人として)も添えて。
+JSONのみ: {"col":数字,"row":数字,"dir":"上|下|右|左","say":"..."}`;
+  try{
+    const r=await fetch('/ai',{method:'POST',body:JSON.stringify({prompt,json:true})}).then(r=>r.json());
+    const j=JSON.parse(r.text), c=+j.col, w=+j.row;
+    const dv=DIRS[j.dir];
+    if(c>=0&&c<4&&w>=0&&w<4 && Math.abs(c-bc.c)+Math.abs(w-bc.r)>=2 && !(other&&other.c===c&&other.r===w)){
+      let d=dv&&okFront(c,w,dv)?[j.dir,dv]:null;
+      if(!d){ let bs=-1; for(const [k,v] of Object.entries(DIRS)){ if(!okFront(c,w,v))continue; const sc=(c+v[0]-bc.c)**2+(w+v[1]-bc.r)**2; if(sc>bs){bs=sc;d=[k,v]} } }
+      return {c,r:w,dc:d[1][0],dr:d[1][1],dir:d[0],say:String(j.say||'').slice(0,20),ai:true};
+    }
+    L('AI_REJECT',r.text,bc);
+  }catch(e){L('AI_ERR',String(e))}
+  // AIが失敗したら: 一番遠いマス
+  let best=null,bd=-1;for(let c=0;c<4;c++)for(let w=0;w<4;w++){if(other&&other.c===c&&other.r===w)continue;const d=Math.abs(c-bc.c)+Math.abs(w-bc.r)+Math.random()*.5;if(d>bd){bd=d;best={c,r:w}}}
+  // 向き: 玉と反対側で、盤の内側を向くもの
+  let dv=null,dn='';for(const [k,v] of Object.entries(DIRS)){if(!okFront(best.c,best.r,v))continue;const away=(best.c+v[0]-bc.c)**2+(best.r+v[1]-bc.r)**2;if(!dv||away>dv.s)dv={v,s:away},dn=k}
+  return {...best,dc:dv.v[0],dr:dv.v[1],dir:dn,say:'',ai:false};
+}
+function okFront(c,r,v){const a=c+v[0],b=r+v[1];return a>=0&&a<4&&b>=0&&b<4}
+async function nextTurn(){
+  if(turnNo >= (mode===1?TURNS1:TURNS2*2)) return finish();
+  state='placing'; const ball=cubes[runner];
+  big((mode===2?NAME[runner]+'の番<br>':'')+'<span style="font-size:34px">お客さんを呼んでいます…</span>','info'); say('…'); hl();
+  doll=await aiPlace(ball); L('DOLL',doll);
+  say(doll.say||'こっちだよ〜'); $('face').textContent=['🧑','👵','👴','👧','🧔','👩‍🍳','🧙'][Math.floor(Math.random()*7)];
+  const t=cellXY(doll.c,doll.r); cubes[2].goTo(t.x,t.y,dirAngle(doll.dc,doll.dr),70);
+
+  await sleep(1800);
+  big((mode===2?NAME[runner]+'<br>':'')+'GO!','go',900); cubes[2].sound(1);
+  tTurn=Date.now(); tEnd=tTurn+TURN_LIMIT*1000; lastIn=null; state='run';
+}
+async function arrived(){
+  state='wait'; const sec=(Date.now()-tTurn)/1000;
+  cubes[runner].stop(); cubes[runner].sound(6);
+  times[runner].push(sec); score[runner]++; turnNo++;
+  big('とどいた!<br><span style="font-size:46px">'+sec.toFixed(1)+'秒</span>','ok'); confetti(); say('ありがとう!'); L('ARRIVE',runner,sec);
+  showScore(); await sleep(1500);
+
+  if(mode===2) runner=1-runner;
+  nextTurn();
+}
+// 落とした / マットの外 / 時間切れ → その番は終わり(配達0)
+let lastIn=null, backCell=null;   // 最後に盤の中にいた位置 / 置き直すマス
+function clampCell(q){return {c:Math.max(0,Math.min(3,Math.round(q.c))),r:Math.max(0,Math.min(3,Math.round(q.r)))}}
+function turnEnd(why){
+  if(state!=='run'&&state!=='placing') return;
+  backCell=null;
+  if(why!=='time'){
+    const b=cubes[runner], q=b?.pos?.x!=null&&b.pos.onMat!==false?toGrid(b.pos):lastIn;
+    backCell=q?clampCell(q):null;
+    if(why==='drop' && backCell && b){ const t=cellXY(backCell.c,backCell.r); setTimeout(()=>b.goTo(t.x,t.y,null,40),300) }  // 落とした: そっと一番近いマスへ
+  }
+  cubes.forEach(c=>c&&c.stop()); cubes[runner]?.sound(3); L('TURNEND',runner,why); turnNo++;
+  $('flash').className='';void $('flash').offsetWidth;$('flash').className='on'; say(why==='time'?'おそいよ〜':'あーっ!');
+  const head={drop:'落とした!',out:'場外!',time:'時間切れ!'}[why];
+  if(why==='time'){ state='wait'; big(head,'ng'); setTimeout(resumeAfterDrop,1600); return }
+  state='reload';
+  big(head+'<br><span style="font-size:30px;color:#fff">'+(why==='out'?'光っているマスにtoioを置いて':'玉を乗せ直して')+'<br><b style="color:#ffd23f">スペース</b>で次へ</span>','ng');
+}
+function dropped(){
+  if(state==='reload'){ resumeAfterDrop(); return }   // 戻したら もう一度スペースで再開
+  turnEnd('drop');
+}
+function resumeAfterDrop(){
+  backCell=null;
+  if(mode===2) runner=1-runner;
+  nextTurn();
+}
+function finish(){
+  state='idle'; cubes.forEach(c=>c&&c.stop()); hl();
+  if(mode===1){ big('おしまい!<br><span style="font-size:56px;color:#fff">'+score[0]+' / '+TURNS1+' 配達</span>','ok'); confetti(); }
+  else{ const t=times.map(a=>a.reduce((x,y)=>x+y,0));
+    const w = score[0]!==score[1] ? (score[0]>score[1]?0:1) : (t[0]<=t[1]?0:1);
+    big(NAME[w]+'の勝ち!<br><span style="font-size:34px;color:#fff">オレンジ '+score[0]+'回 / 白 '+score[1]+'回</span>','ok'); confetti(); }
+  showScore();
+}
+function hl(){for(let i=0;i<2;i++)$('pl'+i).classList.toggle('on',state!=='idle'&&runner===i)}
+function showScore(){
+  for(let i=0;i<2;i++){ $('v'+i).textContent=score[i]+'回'; $('t'+i).textContent=times[i].map(t=>t.toFixed(1)).join(' / ') }
+  $('pl1').style.opacity=mode===1?.35:1;
+}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();dropped()}});
+
+// ---- パッド ----
+function onPad(e){
+  const [st,n,v]=e.data; if((st&0xF0)!==0x90||v===0||n<36||n>51) return;
+  L('PAD',n,v,state);
+  if(calStep>=0){calHit(n);return}
+  const col=(n-36)&3, row=(n-36)>>2;      // 36=左下 39=右下 48=左上
+  const who = state==='idle' ? cur : runner;      // ゲーム外では選んでいるtoioを動かして練習
+  if(state==='placing'||state==='wait'||state==='reload') return;
+  const c=cubes[who]; if(!c) return;
+  const t=cellXY(col,row), sp=Math.round(20+v/127*200);   // 強いほど速い
+  c.goTo(t.x,t.y,null,sp);
+  $('powbar').style.width=Math.round(v/127*100)+'%';
+}
+let padOK=false;
+function hookPads(acc){padOK=false;for(const p of acc.inputs.values()) if(p.name.includes('STARRYPAD')&&p.state!=='disconnected'){p.onmidimessage=onPad;padOK=true}
+  L('MIDI',padOK,[...acc.inputs.values()].map(p=>p.name+':'+p.state)); $('padSt').textContent=padOK?'🎹 パッド OK':'🎹 パッドが見つかりません'; $('padSt').style.color=padOK?'#38e07b':'#ff4d5e'}
+navigator.requestMIDIAccess().then(acc=>{hookPads(acc); acc.onstatechange=()=>hookPads(acc)}).catch(e=>{L('MIDIERR',String(e)); $('padSt').textContent='🎹 パッドを使う許可がありません'});
+
+// ---- 毎フレーム: 到着判定・時間・地図 ----
+function loop(){
+  if(state==='run'){
+    const b=cubes[runner], d=cubes[2];
+    if(b?.pos?.x!=null && d?.pos?.x!=null){
+      const fp=frontPoint(d.pos), ok=dist(b.pos,fp)<ARRIVE;
+      if(ok){ if(!touchAt) touchAt=Date.now(); else if(Date.now()-touchAt>HOLD){touchAt=0;arrived()} } else touchAt=0;
+    }
+  }
+  if(state==='run'){
+    const b=cubes[runner];
+    if(b?.pos?.x!=null && b.pos.onMat!==false){const q=toGrid(b.pos); if(q.c>=-0.5&&q.c<=3.5&&q.r>=-0.5&&q.r<=3.5) lastIn=q}
+    if(b?.pos && (b.pos.onMat===false || (b.pos.x!=null && (()=>{const q=toGrid(b.pos);return q.c<-0.9||q.c>3.9||q.r<-0.9||q.r>3.9})()))) turnEnd('out');
+    const s=Math.max(0,(tEnd-Date.now())/1000); $('time').textContent=s.toFixed(1); $('timeLabel').textContent=(mode===2?NAME[runner]+' ':'')+'のこり(秒)';
+    $('arc').setAttribute('stroke-dashoffset',314*(1-s/TURN_LIMIT)); $('arc').style.stroke=s<5?'var(--ng)':'var(--gold)';
+    if(s<=0 && state==='run') turnEnd('time');
+  }
+
+  fxStep();
+  draw(); requestAnimationFrame(loop);
+}
+function toGrid(p){ // マット座標 → 盤の座標(列,段) 小数
+  if(!CAL) return {c:(p.x-98)/76-0.5, r:(358-p.y)/54-0.5};
+  const A=CAL.x.a,B=CAL.x.b,C=CAL.y.a,D=CAL.y.b,det=A*D-B*C,dx=p.x-CAL.x.o,dy=p.y-CAL.y.o;
+  return {c:(D*dx-B*dy)/det, r:(-C*dx+A*dy)/det};
+}
+const ROOF=['#e85d5d','#4cc3ff','#ffd23f','#8f6bff','#38e07b','#ff8a2a','#ff7bc8','#5de0d0'];
+let trail=[[],[],[]], tick=0;
+function draw(){
+  const g=$('map').getContext('2d'), S=620, M=40, T=(S-2*M)/4; tick++;
+  const P=q=>({x:M+(q.c+.5)*T, y:S-M-(q.r+.5)*T});
+  // 地面: ただのマス目。目的地だけ目立たせる
+  g.fillStyle='#1b2a55'; g.fillRect(0,0,S,S);
+  for(let c=0;c<4;c++)for(let r=0;r<4;r++){
+    const q=P({c,r}), isD=doll&&doll.c===c&&doll.r===r;
+    g.fillStyle=(c+r)%2?'#26386d':'#2c4079';
+    g.beginPath();g.roundRect(q.x-T/2+5,q.y-T/2+5,T-10,T-10,14);g.fill();
+    if(isD){
+      const pul=0.5+0.5*Math.sin(tick/8);
+      g.fillStyle=`rgba(255,210,63,${0.25+0.25*pul})`;g.beginPath();g.roundRect(q.x-T/2+5,q.y-T/2+5,T-10,T-10,14);g.fill();
+      g.strokeStyle='#ffd23f';g.lineWidth=5;g.beginPath();g.roundRect(q.x-T/2+5,q.y-T/2+5,T-10,T-10,14);g.stroke();g.lineWidth=1;
+      g.fillStyle='#ffd23f';g.font='bold 18px "M PLUS Rounded 1c",sans-serif';g.textAlign='center';g.textBaseline='top';g.fillText('おとどけ先',q.x,q.y-T/2+12);
+    }
+  }
+  if(backCell){const q=P(backCell),pul=0.5+0.5*Math.sin(tick/5);
+    g.fillStyle=`rgba(255,77,94,${0.3+0.4*pul})`;g.beginPath();g.roundRect(q.x-T/2+5,q.y-T/2+5,T-10,T-10,14);g.fill();
+    g.fillStyle='#fff';g.font='bold 18px "M PLUS Rounded 1c",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('ここに戻す',q.x,q.y)}
+  // 軌跡
+  [['255,138,42'],['242,244,248'],['30,30,30']].forEach(([rgb],i)=>{const c=cubes[i];if(c?.pos?.x!=null){const q=P(toGrid(c.pos));trail[i].push(q);if(trail[i].length>40)trail[i].shift()}
+    trail[i].forEach((q,k)=>{g.fillStyle=`rgba(${rgb},${k/80})`;g.beginPath();g.arc(q.x,q.y,4+k/8,0,7);g.fill()})});
+  // 人形 + 正面
+  const d=cubes[2];
+  if(d?.pos?.x!=null){
+    const q=P(toGrid(d.pos)), f=P(toGrid(frontPoint(d.pos))), ang=Math.atan2(f.y-q.y,f.x-q.x);
+    const pul=0.5+0.5*Math.sin(tick/6);
+    g.strokeStyle=`rgba(56,224,123,${0.6+0.4*pul})`;g.lineWidth=4;g.setLineDash([6,6]);g.beginPath();g.arc(f.x,f.y,20+pul*6,0,7);g.stroke();g.setLineDash([]);
+    g.fillStyle='rgba(56,224,123,.85)';g.save();g.translate(q.x,q.y);g.rotate(ang);g.beginPath();g.moveTo(34,0);g.lineTo(18,-11);g.lineTo(18,11);g.fill();g.restore();
+    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(q.x+3,q.y+18,20,8,0,0,7);g.fill();
+    g.fillStyle='#222';g.beginPath();g.arc(q.x,q.y,18,0,7);g.fill();
+    g.font='26px serif';g.textAlign='center';g.textBaseline='middle';g.fillText($('face').textContent,q.x,q.y-2);
+  }
+  // 玉
+  [['#ffd0a0','#ff8a2a','#b04a00'],['#ffffff','#e6e9f0','#9aa3b5']].forEach((cl,i)=>{const c=cubes[i];if(!c?.pos||c.pos.x==null)return;
+    const q=P(toGrid(c.pos)), on=state!=='idle'&&runner===i;
+    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(q.x+4,q.y+20,20,8,0,0,7);g.fill();
+    const gr=g.createRadialGradient(q.x-7,q.y-8,3,q.x,q.y,22);gr.addColorStop(0,cl[0]);gr.addColorStop(.55,cl[1]);gr.addColorStop(1,cl[2]);
+    g.fillStyle=gr;g.beginPath();g.arc(q.x,q.y,20,0,7);g.fill();
+    if(on){g.strokeStyle='#ffd23f';g.lineWidth=4;g.beginPath();g.arc(q.x,q.y,26+2*Math.sin(tick/5),0,7);g.stroke()}
+  });
+  $('info').textContent=(CAL?'✅ 位置合わせ済み':'⚠ 位置合わせ未')+' / '+cubes.map((c,i)=>c&&c.pos?`${i+1}:(${c.pos.x},${c.pos.y},${c.pos.angle}°)`:`${i+1}:-`).join(' ');
+}
+loop();
+</script></body></html>
